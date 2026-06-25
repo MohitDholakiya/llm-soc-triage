@@ -1,0 +1,15 @@
+:rotating_light: *SOC Triage:* *{{ severity|upper }}* — `{{ event_type or alert_id }}`
+
+*Host:* {{ host or "—" }}  •  *User:* {{ user or "—" }}  •  *Source IP:* {{ src_ip or "—" }}
+{%- if mitre_attack %}
+*MITRE ATT&CK:* {{ mitre_attack | join(', ') }}
+{%- endif %}
+
+> {{ summary }}
+
+*Next steps:*
+{% for step in next_steps -%}
+• {{ step }}
+{% endfor %}
+
+_Confidence: *{{ confidence_pct }}%_{% if needs_human_review %} — flagged for human review{% endif %} • Model: {{ model_provider }} ({{ latency_ms }}ms)_
