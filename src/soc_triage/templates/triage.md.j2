@@ -1,0 +1,36 @@
+# 🚨 SOC Triage: {{ severity|upper }} — {{ event_type or alert_id }}
+
+**Alert ID:** `{{ alert_id }}`
+**Timestamp:** {{ ts }}
+**Host:** {{ host or "—" }}
+**User:** {{ user or "—" }}
+**Source IP:** {{ src_ip or "—" }}
+{%- if mitre_attack %}
+
+**MITRE ATT&CK:** {% for t in mitre_attack %}`{{ t }}`{% if not loop.last %}, {% endif %}{% endfor %}
+{%- endif %}
+
+---
+
+## Summary
+
+{{ summary }}
+
+{% if rationale -%}
+## Rationale
+
+{{ rationale }}
+{% endif %}
+
+## Next steps
+
+{% for step in next_steps -%}
+- {{ step }}
+{% endfor %}
+
+---
+
+*Confidence: **{{ confidence_pct }}%*** {% if needs_human_review %}⚠️ **flagged for human review** (below 60%){% endif %}
+*Model: {{ model_provider }} · {{ model_name }} · {{ latency_ms }}ms*
+*Triage status: `{{ triage_status }}`*
+*Rendered: {{ rendered_at }}*
