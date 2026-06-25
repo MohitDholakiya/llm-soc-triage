@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SOC Triage Assistant — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'JetBrains Mono', monospace;
+    background: #020617;
+    color: #e2e8f0;
+    padding: 32px;
+    min-height: 100vh;
+}
+.container { max-width: 1400px; margin: 0 auto; }
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fb7185;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 12px #fb7185;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.subtitle { color: #94a3b8; font-size: 13px; margin-top: 4px; }
+.diagram-card {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+svg { display: block; width: 100%; height: auto; }
+.legend { font-size: 9px; fill: #cbd5e1; }
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.card {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 16px;
+}
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.card-dot { width: 8px; height: 8px; border-radius: 50%; }
+.card-dot.cyan { background: #22d3ee; }
+.card-dot.violet { background: #a78bfa; }
+.card-dot.rose { background: #fb7185; }
+.card h3 { font-size: 14px; font-weight: 500; }
+.card ul { list-style: none; }
+.card li {
+    font-size: 11px;
+    color: #94a3b8;
+    padding: 3px 0;
+}
+.footer {
+    font-size: 10px;
+    color: #475569;
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #1e293b;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+    <div class="dot"></div>
+    <div>
+        <h1>SOC Triage Assistant — Architecture</h1>
+        <div class="subtitle">read-only LLM triage · strict JSON schema · kill switch at every step</div>
+    </div>
+</div>
+
+<div class="diagram-card">
+<svg viewBox="0 0 1320 720" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+        </pattern>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+        </marker>
+        <marker id="arrow-rose" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#fb7185"/>
+        </marker>
+        <marker id="arrow-emerald" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#34d399"/>
+        </marker>
+    </defs>
+
+    <rect width="1320" height="720" fill="url(#grid)"/>
+
+    <!-- ============================== -->
+    <!-- Layer 1: SIEM / Alert sources  -->
+    <!-- ============================== -->
+    <text x="20" y="40" class="legend" fill="#64748b">SOURCES — read-only</text>
+
+    <!-- Wazuh -->
+    <rect x="40" y="60" width="180" height="60" rx="6"
+          fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="130" y="83" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">Wazuh API</text>
+    <text x="130" y="103" text-anchor="middle" fill="#cbd5e1" font-size="9">/security/user/authenticate</text>
+
+    <!-- Elastic -->
+    <rect x="40" y="140" width="180" height="60" rx="6"
+          fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="130" y="163" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">Elastic / OpenSearch</text>
+    <text x="130" y="183" text-anchor="middle" fill="#cbd5e1" font-size="9">GET /{index}/_search</text>
+
+    <!-- Syslog -->
+    <rect x="40" y="220" width="180" height="60" rx="6"
+          fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="130" y="243" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">Syslog files</text>
+    <text x="130" y="263" text-anchor="middle" fill="#cbd5e1" font-size="9">/var/log/syslog · auth.log</text>
+
+    <!-- JSONL -->
+    <rect x="40" y="300" width="180" height="60" rx="6"
+          fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+    <text x="130" y="323" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">JSONL files</text>
+    <text x="130" y="343" text-anchor="middle" fill="#cbd5e1" font-size="9">sample_alerts.jsonl</text>
+
+    <!-- ============================== -->
+    <!-- Layer 2: Alert source adapter -->
+    <!-- ============================== -->
+    <rect x="280" y="120" width="200" height="220" rx="6"
+          fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="280" y="120" width="200" height="220" rx="6" fill="#0f172a"/>
+    <rect x="280" y="120" width="200" height="220" rx="6"
+          fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="380" y="145" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">AlertSource</text>
+    <text x="380" y="163" text-anchor="middle" fill="#94a3b8" font-size="9">pluggable adapters</text>
+
+    <text x="295" y="195" fill="#cbd5e1" font-size="10">• JsonlFileSource</text>
+    <text x="295" y="215" fill="#cbd5e1" font-size="10">• SyslogSource</text>
+    <text x="295" y="235" fill="#cbd5e1" font-size="10">• WazuhSource</text>
+    <text x="295" y="255" fill="#cbd5e1" font-size="10">• ElasticSource</text>
+    <text x="295" y="275" fill="#cbd5e1" font-size="10">• StubSource</text>
+    <text x="295" y="310" fill="#fb7185" font-size="9">read-only — no writes</text>
+
+    <!-- Arrows from sources to AlertSource -->
+    <line x1="220" y1="90"  x2="278" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="220" y1="170" x2="278" y2="200" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="220" y1="250" x2="278" y2="240" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="220" y1="330" x2="278" y2="270" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- ============================== -->
+    <!-- Layer 3: Triage orchestrator  -->
+    <!-- ============================== -->
+    <rect x="540" y="80" width="280" height="320" rx="6"
+          fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+    <rect x="540" y="80" width="280" height="320" rx="6" fill="#0f172a"/>
+    <rect x="540" y="80" width="280" height="320" rx="6"
+          fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="680" y="105" text-anchor="middle" fill="#22d3ee" font-size="14" font-weight="700">TriageOrchestrator</text>
+    <text x="680" y="123" text-anchor="middle" fill="#94a3b8" font-size="9">read-only pipeline</text>
+
+    <text x="555" y="155" fill="#22d3ee" font-size="10">① kill_switch.trip_if_armed()</text>
+    <text x="555" y="178" fill="#cbd5e1" font-size="9">   → skip if armed</text>
+    <text x="555" y="200" fill="#22d3ee" font-size="10">② build_user_prompt(alert,</text>
+    <text x="570" y="214" fill="#cbd5e1" font-size="9">   few_shot_examples)</text>
+    <text x="555" y="236" fill="#22d3ee" font-size="10">③ provider.complete(prompt,</text>
+    <text x="570" y="250" fill="#cbd5e1" font-size="9">   system) → STRICT JSON</text>
+    <text x="555" y="272" fill="#22d3ee" font-size="10">④ validate(TRIAGE_SCHEMA)</text>
+    <text x="555" y="294" fill="#22d3ee" font-size="10">⑤ needs_human_review if</text>
+    <text x="570" y="308" fill="#cbd5e1" font-size="9">   confidence &lt; 0.6</text>
+    <text x="555" y="330" fill="#22d3ee" font-size="10">⑥ store.insert_triage()</text>
+    <text x="555" y="352" fill="#fb7185" font-size="9">NEVER executes next_steps</text>
+    <text x="555" y="370" fill="#fb7185" font-size="9">NEVER writes to SIEM</text>
+
+    <!-- Arrow from AlertSource to Orchestrator -->
+    <line x1="480" y1="230" x2="538" y2="240" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-emerald)"/>
+    <text x="500" y="220" fill="#34d399" font-size="9">Alert[]</text>
+
+    <!-- ============================== -->
+    <!-- Layer 4: LLM provider        -->
+    <!-- ============================== -->
+    <rect x="880" y="120" width="200" height="240" rx="6"
+          fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+    <rect x="880" y="120" width="200" height="240" rx="6" fill="#0f172a"/>
+    <rect x="880" y="120" width="200" height="240" rx="6"
+          fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
+    <text x="980" y="145" text-anchor="middle" fill="#fb7185" font-size="13" font-weight="700">LLMProvider</text>
+    <text x="980" y="163" text-anchor="middle" fill="#94a3b8" font-size="9">strict JSON schema</text>
+
+    <text x="895" y="195" fill="#fbbf24" font-size="10">• OllamaProvider</text>
+    <text x="895" y="207" fill="#cbd5e1" font-size="8">   localhost:11434</text>
+    <text x="895" y="230" fill="#fbbf24" font-size="10">• OpenAICompat</text>
+    <text x="895" y="242" fill="#cbd5e1" font-size="8">   vLLM, llama.cpp</text>
+    <text x="895" y="265" fill="#fbbf24" font-size="10">• StubProvider</text>
+    <text x="895" y="277" fill="#cbd5e1" font-size="8">   deterministic offline</text>
+    <text x="895" y="308" fill="#fb7185" font-size="9">⚠ validates every response</text>
+    <text x="895" y="322" fill="#fb7185" font-size="9">⚠ raises on schema fail</text>
+    <text x="895" y="343" fill="#a78bfa" font-size="9">local LLM recommended</text>
+
+    <!-- Arrow Orchestrator → LLMProvider -->
+    <line x1="820" y1="200" x2="878" y2="200" stroke="#22d3ee" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="845" y="190" fill="#cbd5e1" font-size="9">prompt</text>
+    <line x1="878" y1="270" x2="822" y2="270" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-emerald)"/>
+    <text x="845" y="262" fill="#34d399" font-size="9">JSON</text>
+
+    <!-- ============================== -->
+    <!-- Layer 5: Storage + Kill      -->
+    <!-- ============================== -->
+    <text x="20" y="430" class="legend" fill="#64748b">STORAGE &amp; SAFETY</text>
+
+    <!-- TriageStore -->
+    <rect x="40" y="450" width="280" height="220" rx="6"
+          fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <rect x="40" y="450" width="280" height="220" rx="6" fill="#0f172a"/>
+    <rect x="40" y="450" width="280" height="220" rx="6"
+          fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="180" y="475" text-anchor="middle" fill="#a78bfa" font-size="13" font-weight="700">TriageStore</text>
+    <text x="180" y="493" text-anchor="middle" fill="#94a3b8" font-size="9">SQLite (WAL) + JSONL</text>
+
+    <text x="55" y="525" fill="#a78bfa" font-size="10">• triage_records</text>
+    <text x="55" y="545" fill="#a78bfa" font-size="10">• feedback (👍/👎)</text>
+    <text x="55" y="565" fill="#a78bfa" font-size="10">• prompt_bank</text>
+    <text x="55" y="595" fill="#cbd5e1" font-size="9">→ severity_counts()</text>
+    <text x="55" y="610" fill="#cbd5e1" font-size="9">→ mitre_counts()</text>
+    <text x="55" y="625" fill="#cbd5e1" font-size="9">→ confidence_histogram()</text>
+    <text x="55" y="650" fill="#fb7185" font-size="9">atomic dual-write</text>
+
+    <!-- KillSwitch -->
+    <rect x="380" y="450" width="240" height="220" rx="6"
+          fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="2" stroke-dasharray="4,4"/>
+    <rect x="380" y="450" width="240" height="220" rx="6" fill="#0f172a"/>
+    <rect x="380" y="450" width="240" height="220" rx="6"
+          fill="rgba(136, 19, 55, 0.2)" stroke="#fb7185" stroke-width="2" stroke-dasharray="4,4"/>
+    <text x="500" y="475" text-anchor="middle" fill="#fb7185" font-size="13" font-weight="700">🛑 KillSwitch</text>
+    <text x="500" y="493" text-anchor="middle" fill="#94a3b8" font-size="9">file + signal + REST</text>
+
+    <text x="395" y="525" fill="#fb7185" font-size="10">⚠ data/KILL_SWITCH file</text>
+    <text x="395" y="540" fill="#cbd5e1" font-size="8">   → arm by touching</text>
+    <text x="395" y="563" fill="#fb7185" font-size="10">⚠ SIGTERM/SIGINT</text>
+    <text x="395" y="578" fill="#cbd5e1" font-size="8">   → arm via signal handler</text>
+    <text x="395" y="601" fill="#fb7185" font-size="10">⚠ POST /kill (REST)</text>
+    <text x="395" y="616" fill="#cbd5e1" font-size="8">   → arm via API</text>
+    <text x="395" y="640" fill="#a78bfa" font-size="9">→ kill_switch_audit.jsonl</text>
+    <text x="395" y="655" fill="#a78bfa" font-size="9">  every arm/disarm logged</text>
+
+    <!-- Renderer -->
+    <rect x="680" y="450" width="200" height="220" rx="6"
+          fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+    <rect x="680" y="450" width="200" height="220" rx="6" fill="#0f172a"/>
+    <rect x="680" y="450" width="200" height="220" rx="6"
+          fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+    <text x="780" y="475" text-anchor="middle" fill="#22d3ee" font-size="13" font-weight="700">Renderer</text>
+    <text x="780" y="493" text-anchor="middle" fill="#94a3b8" font-size="9">Jinja2 templates</text>
+
+    <text x="695" y="525" fill="#22d3ee" font-size="10">• render_markdown()</text>
+    <text x="695" y="540" fill="#cbd5e1" font-size="8">   → dashboard / GitHub</text>
+    <text x="695" y="563" fill="#22d3ee" font-size="10">• render_slack()</text>
+    <text x="695" y="578" fill="#cbd5e1" font-size="8">   → chat ops alerts</text>
+    <text x="695" y="601" fill="#22d3ee" font-size="10">• render_teams()</text>
+    <text x="695" y="616" fill="#cbd5e1" font-size="8">   → MS Teams cards</text>
+    <text x="695" y="640" fill="#fbbf24" font-size="9">text only — never executes</text>
+
+    <!-- FastAPI server -->
+    <rect x="940" y="450" width="160" height="220" rx="6"
+          fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <rect x="940" y="450" width="160" height="220" rx="6" fill="#0f172a"/>
+    <rect x="940" y="450" width="160" height="220" rx="6"
+          fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+    <text x="1020" y="475" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">FastAPI</text>
+    <text x="1020" y="493" text-anchor="middle" fill="#94a3b8" font-size="9">13 endpoints</text>
+
+    <text x="955" y="525" fill="#34d399" font-size="10">• POST /triage</text>
+    <text x="955" y="540" fill="#cbd5e1" font-size="8">• POST /triage/batch</text>
+    <text x="955" y="563" fill="#34d399" font-size="10">• GET /stats</text>
+    <text x="955" y="578" fill="#cbd5e1" font-size="8">• GET /triages</text>
+    <text x="955" y="601" fill="#fb7185" font-size="10">• POST /kill</text>
+    <text x="955" y="616" fill="#cbd5e1" font-size="8">• DELETE /kill</text>
+    <text x="955" y="640" fill="#34d399" font-size="10">• POST /feedback</text>
+    <text x="955" y="655" fill="#a78bfa" font-size="8">  → 👍 to prompt_bank</text>
+
+    <!-- Arrow from orchestrator to store -->
+    <line x1="540" y1="380" x2="320" y2="448" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="420" y="430" fill="#a78bfa" font-size="9">insert_triage()</text>
+
+    <!-- Arrow kill switch to orchestrator -->
+    <line x1="500" y1="448" x2="640" y2="402" stroke="#fb7185" stroke-width="2"
+          stroke-dasharray="4,4" marker-end="url(#arrow-rose)"/>
+    <text x="540" y="430" fill="#fb7185" font-size="9">trip_if_armed()</text>
+
+    <!-- Arrow from orchestrator to renderer -->
+    <line x1="820" y1="320" x2="780" y2="448" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="800" y="395" fill="#cbd5e1" font-size="9">record</text>
+
+    <!-- Arrow renderer to server -->
+    <line x1="880" y1="560" x2="938" y2="560" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- ============================== -->
+    <!-- Dashboard (Streamlit)         -->
+    <!-- ============================== -->
+    <rect x="1160" y="450" width="140" height="220" rx="6"
+          fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <rect x="1160" y="450" width="140" height="220" rx="6" fill="#0f172a"/>
+    <rect x="1160" y="450" width="140" height="220" rx="6"
+          fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1.5"/>
+    <text x="1230" y="475" text-anchor="middle" fill="#fb923c" font-size="13" font-weight="700">Dashboard</text>
+    <text x="1230" y="493" text-anchor="middle" fill="#94a3b8" font-size="9">Streamlit</text>
+    <text x="1175" y="525" fill="#fb923c" font-size="10">• KPI cards</text>
+    <text x="1175" y="545" fill="#fb923c" font-size="10">• Severity chart</text>
+    <text x="1175" y="565" fill="#fb923c" font-size="10">• Confidence hist.</text>
+    <text x="1175" y="585" fill="#fb923c" font-size="10">• MITRE heatmap</text>
+    <text x="1175" y="605" fill="#fb923c" font-size="10">• Kill switch</text>
+    <text x="1175" y="625" fill="#fb923c" font-size="10">• 👍 / 👎 buttons</text>
+
+    <line x1="1100" y1="560" x2="1158" y2="560" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <!-- ============================== -->
+    <!-- Safety boundary               -->
+    <!-- ============================== -->
+    <rect x="20" y="690" width="1280" height="1" stroke="#fb7185" stroke-width="0.5" stroke-dasharray="2,4"/>
+    <text x="640" y="703" text-anchor="middle" fill="#fb7185" font-size="10">
+        ── SAFETY BOUNDARY: the assistant NEVER modifies the source SIEM, NEVER executes next_steps, NEVER calls any external system beyond the configured LLM ──
+    </text>
+</svg>
+</div>
+
+<div class="cards">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-dot cyan"></div>
+            <h3>Pipeline</h3>
+        </div>
+        <ul>
+            <li>• Alert arrives (Wazuh / Elastic / syslog / JSONL)</li>
+            <li>• Kill switch checked — skip if armed</li>
+            <li>• Prompt built with few-shot examples</li>
+            <li>• LLM called, response validated against schema</li>
+            <li>• Record persisted, confidence threshold applied</li>
+            <li>• Render Markdown / Slack / Teams on demand</li>
+        </ul>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-dot violet"></div>
+            <h3>Data model</h3>
+        </div>
+        <ul>
+            <li>• triage_records: alert → triage result</li>
+            <li>• feedback: 👍/👎 verdicts with comment + operator</li>
+            <li>• prompt_bank: few-shot examples auto-grown from 👍</li>
+            <li>• SQLite WAL for analytics, JSONL for forensics</li>
+            <li>• kill_switch_audit.jsonl: every state transition</li>
+        </ul>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-dot rose"></div>
+            <h3>Six safety properties</h3>
+        </div>
+        <ul>
+            <li>• 1. Strict JSON schema — never trust free-form LLM output</li>
+            <li>• 2. Kill switch at every alert — even mid-batch</li>
+            <li>• 3. Read-only against SIEM — GET endpoints only</li>
+            <li>• 4. No action execution — recommendations are text only</li>
+            <li>• 5. Confidence &lt; 0.6 → needs_human_review</li>
+            <li>• 6. Full kill-switch audit log</li>
+        </ul>
+    </div>
+</div>
+
+<div class="footer">
+    llm-soc-triage v0.1.0 · MIT · github.com/MohitDholakiya/llm-soc-triage
+</div>
+
+</div>
+</body>
+</html>
